@@ -13,5 +13,3 @@ RUN pip install cython
 
 RUN apt-get install libgl1-mesa-glx -y
 RUN pip install opencv-python
-#RUN python3 /texel_task/pytorch-insightface/setup.py install
-#RUN python3 /texel_task/FaceDetector/setup.py install
