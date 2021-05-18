@@ -39,8 +39,8 @@ def main(img):
     embedder = insightface.iresnet100(pretrained=True)
     embedder.eval()
 
-    mean = [0.5] * 3
-    std = [0.5 * 256 / 255] * 3
+    mean = [127.5] * 3 #[0.5] * 3
+    std = [128.] * 3 #[0.5 * 256 / 255] * 3
     preprocess = transforms.Compose([
         transforms.Normalize(mean, std)
     ])
