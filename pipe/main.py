@@ -14,13 +14,13 @@ import torch.nn.functional as F
 import argparse
 
 
-def get_rot_mat(theta):
+def get_rot_mat(theta, shift):
     theta = torch.tensor(theta)
-    return torch.tensor([[torch.cos(theta), -torch.sin(theta), 0],
-                         [torch.sin(theta), torch.cos(theta), 0]])
+    return torch.tensor([[torch.cos(theta), -torch.sin(theta), shift[0]],
+                         [torch.sin(theta), torch.cos(theta), shift[1]]])
 
-def rot_img(x, theta, dtype):
-    rot_mat = get_rot_mat(theta)[None, ...].type(dtype).repeat(x.shape[0],1,1)
+def rot_img(x, theta, shift, dtype):
+    rot_mat = get_rot_mat(theta, shift)[None, ...].type(dtype).repeat(x.shape[0],1,1)
     grid = F.affine_grid(rot_mat, x.size()).type(dtype)
     x = F.grid_sample(x, grid)
     return x
@@ -47,11 +47,17 @@ def main(img):
 
     landmarks = landmarks.float()
     boxcpu = boxes.cpu().numpy()
+
     for f0 in range(boxcpu.shape[0]):
         angle = torch.atan2(landmarks[f0][1, 1] - landmarks[f0][0, 1], \
                             landmarks[f0][1, 0] - landmarks[f0][0, 0])# + np.pi/2
         local_patch = img[:, boxes[f0][1]: boxes[f0][3], boxes[f0][0]: boxes[f0][2]].unsqueeze(0)
-        local_patch = rot_img(local_patch, angle, dtype=torch.cuda.FloatTensor)
+        local_patch = rot_img(local_patch, angle, \
+                        [1./local_patch.shape[2]*\
+                            (-0.5*(boxes[f0][2]+boxes[f0][0])+landmarks[f0][2, 0]), \
+                         1./local_patch.shape[3]*\
+                            (-0.5*(boxes[f0][3]+boxes[f0][1])+landmarks[f0][2, 1])], \
+                        dtype=torch.cuda.FloatTensor)
         local_patch = local_patch.squeeze(0)
 
         tensor_face = F.interpolate(local_patch, size=112)
